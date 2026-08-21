@@ -1,0 +1,13 @@
+{
+  "name": "reading-companion",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd backend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && NODE_ENV=production node src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

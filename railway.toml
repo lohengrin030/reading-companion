@@ -1,0 +1,5 @@
+[build]
+builder = "nixpacks"
+
+[nixpacks]
+plan = "nixpacks.toml"

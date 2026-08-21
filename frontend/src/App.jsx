@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { askAI, disambiguate, extractTerms, ocrFormula, ocrImage, parseToc, translateText, uploadDocument, uploadGlossary } from './api.js';
+import { askAI, detectPageImages, disambiguate, extractTerms, ocrFormula, ocrImage, parseToc, translateText, uploadDocument, uploadGlossary } from './api.js';
 import { splitMath, splitParagraphs } from './math.js';
 import { isChineseText } from './text.js';
 import Formula from './Formula.jsx';
@@ -72,6 +72,12 @@ export default function App() {
   const [searchResults, setSearchResults] = useState([]); // [{page, index, length}]
   const [searchIndex, setSearchIndex] = useState(0);
   const searchInputRef = useRef(null);
+
+  // 检测到的页面图片：{ [pageNum]: { count, images: [{name, x, y, w, h, width, height}] } }
+  const [pageImages, setPageImages] = useState({});
+  // 页面图片 OCR 结果：{ [pageNum]: { text, loading } }
+  const [pageImageOcr, setPageImageOcr] = useState({});
+  const [imagesDetecting, setImagesDetecting] = useState(false);
 
   // 批注/笔记：{ [sessionId]: [{ id, text, page, note, color, createdAt }] }
   const [annotations, setAnnotations] = useState([]);
@@ -510,6 +516,20 @@ export default function App() {
       setShowSearch(false);
       setSearchResults([]);
       setSearchQuery('');
+      setPageImages({});
+      setPageImageOcr({});
+      // 异步检测页面图片，不阻塞主流程
+      setImagesDetecting(true);
+      detectPageImages(file)
+        .then((data) => {
+          const map = {};
+          (data.pages || []).forEach((p) => {
+            if (p.imageCount > 0) map[p.page] = { count: p.imageCount, images: p.images };
+          });
+          setPageImages(map);
+        })
+        .catch(() => {})
+        .finally(() => setImagesDetecting(false));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -822,6 +842,19 @@ export default function App() {
       setError(e.message);
     } finally {
       setOcrLoading((s) => ({ ...s, [pageNumber]: false }));
+    }
+  };
+
+  // OCR 页面图片中的文字（渲染整页后 OCR，提取图片区域文字）
+  const handlePageImageOcr = async (pageNumber) => {
+    if (!docFileRef.current) return;
+    setPageImageOcr((s) => ({ ...s, [pageNumber]: { text: '', loading: true } }));
+    try {
+      const image = await renderPageToBase64(docFileRef.current, pageNumber, 2);
+      const res = await ocrImage({ image });
+      setPageImageOcr((s) => ({ ...s, [pageNumber]: { text: res.text, loading: false } }));
+    } catch (e) {
+      setPageImageOcr((s) => ({ ...s, [pageNumber]: { text: '', loading: false, error: e.message } }));
     }
   };
 
@@ -1223,6 +1256,21 @@ export default function App() {
               <section key={p.page} id={`page-${p.page}`} data-page={p.page} className="page">
                 <div className="page-label">
                   <span>第 {p.page} 页</span>
+                  {pageImages[p.page] && (
+                    <span className="page-image-indicator" title="本页包含嵌入图片">
+                      🖼️ {pageImages[p.page].count} 张图片
+                    </span>
+                  )}
+                  {pageImages[p.page] && (
+                    <button
+                      className="page-image-ocr-btn"
+                      onClick={() => handlePageImageOcr(p.page)}
+                      disabled={pageImageOcr[p.page]?.loading}
+                      title="识别本页图片中的文字"
+                    >
+                      {pageImageOcr[p.page]?.loading ? '识别中…' : '🖼️ 识别图片文字'}
+                    </button>
+                  )}
                   {bookmarks.includes(p.page) ? (
                     <button
                       className="page-bookmark marked"
@@ -1382,6 +1430,26 @@ export default function App() {
                         )}
                         {!boxResult[p.page].ocr && <div className="box-line">框内未识别到文字</div>}
                       </>
+                    )}
+                  </div>
+                )}
+                {pageImageOcr[p.page] && !pageImageOcr[p.page].loading && (
+                  <div className="page-image-ocr-result">
+                    <div className="page-image-ocr-head">
+                      <span>🖼️ 图片文字识别结果</span>
+                      <button
+                        className="page-image-ocr-close"
+                        onClick={() => setPageImageOcr((s) => { const n = { ...s }; delete n[p.page]; return n; })}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    {pageImageOcr[p.page].error ? (
+                      <div className="page-image-ocr-error">{pageImageOcr[p.page].error}</div>
+                    ) : pageImageOcr[p.page].text ? (
+                      <div className="page-image-ocr-text">{pageImageOcr[p.page].text}</div>
+                    ) : (
+                      <div className="page-image-ocr-empty">本页图片中未识别到文字</div>
                     )}
                   </div>
                 )}

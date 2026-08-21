@@ -11,6 +11,7 @@ import glossaryRouter from './routes/glossary.js';
 import disambiguateRouter from './routes/disambiguate.js';
 import extractTermsRouter from './routes/extractTerms.js';
 import parseTocRouter from './routes/parseToc.js';
+import detectImagesRouter from './routes/detectImages.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,6 +29,7 @@ app.use('/api', glossaryRouter);
 app.use('/api', disambiguateRouter);
 app.use('/api', extractTermsRouter);
 app.use('/api', parseTocRouter);
+app.use('/api', detectImagesRouter);
 
 // 生产环境：后端托管前端构建产物，同源部署
 const distPath = path.join(__dirname, '../../frontend/dist');

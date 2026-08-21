@@ -155,3 +155,14 @@ export async function ocrFormula({ image }) {
   }
   return res.json();
 }
+
+export async function detectPageImages(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch('/api/detect-images', { method: 'POST', body: fd });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || '图片检测失败');
+  }
+  return res.json();
+}

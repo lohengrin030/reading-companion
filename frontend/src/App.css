@@ -715,6 +715,80 @@ button:disabled { background: #9db9e8; cursor: not-allowed; }
 }
 .terms-export:hover { border-color: #1f6feb; color: #1f6feb; }
 
+/* 页面图片检测与 OCR */
+.page-image-indicator {
+  display: inline-block;
+  padding: 1px 8px;
+  margin-left: 6px;
+  background: #fff8e6;
+  color: #bf8700;
+  border: 1px solid #d4a72c;
+  border-radius: 12px;
+  font-size: 12px;
+}
+.page-image-ocr-btn {
+  padding: 2px 8px;
+  margin-left: 6px;
+  font-size: 12px;
+  background: #fff;
+  color: #1f6feb;
+  border: 1px solid #1f6feb;
+  border-radius: 12px;
+}
+.page-image-ocr-btn:disabled {
+  background: #f6f8fa;
+  color: #9db9e8;
+  border-color: #d0d7de;
+}
+.page-image-ocr-btn:hover:not(:disabled) {
+  background: #eef4ff;
+}
+.page-image-ocr-result {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f0f7ff;
+  border: 1px solid #b6d4fe;
+  border-radius: 8px;
+}
+.page-image-ocr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f6feb;
+}
+.page-image-ocr-close {
+  background: none;
+  color: #8c959f;
+  font-size: 14px;
+  padding: 0 4px;
+}
+.page-image-ocr-close:hover {
+  color: #cf222e;
+}
+.page-image-ocr-text {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1f2328;
+  white-space: pre-wrap;
+}
+.page-image-ocr-error {
+  color: #cf222e;
+  font-size: 13px;
+}
+.page-image-ocr-empty {
+  color: #8c959f;
+  font-size: 13px;
+  text-align: center;
+  padding: 8px 0;
+}
+@media (max-width: 768px) {
+  .page-image-indicator { font-size: 11px; padding: 1px 6px; }
+  .page-image-ocr-btn { font-size: 11px; padding: 1px 6px; }
+}
+
 /* ========== 移动端适配 ========== */
 @media (max-width: 768px) {
   .app { max-width: 100%; padding: 8px; }

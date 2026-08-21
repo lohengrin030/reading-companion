@@ -60,7 +60,63 @@ async function resolveOutline(doc, items) {
   return result;
 }
 
-// 根据每个文字块的坐标把零散文字拼回行、再把行拼回段落。
+// 检测 PDF 每页是否包含嵌入图片（用于前端显示"识别图片"入口）。
+// 返回 [{ page, imageCount, images: [{ name, width, height, x, y, w, h }] }]
+export async function detectPageImages(buffer, pageNumbers) {
+  const data = new Uint8Array(buffer);
+  const doc = await getDocument({ data, verbosity: 0 }).promise;
+
+  const pages = [];
+  const targetPages = pageNumbers && pageNumbers.length
+    ? pageNumbers
+    : Array.from({ length: doc.numPages }, (_, i) => i + 1);
+
+  for (const pageNum of targetPages) {
+    if (pageNum < 1 || pageNum > doc.numPages) continue;
+    const page = await doc.getPage(pageNum);
+    const { imageCount, images } = await detectImagesFromPage(page);
+    pages.push({ page: pageNum, imageCount, images });
+    page.cleanup();
+  }
+
+  await doc.destroy();
+  return pages;
+}
+
+async function detectImagesFromPage(page) {
+  const result = [];
+  try {
+    const imageList = await page.getImageList();
+    if (!imageList || imageList.length === 0) return { imageCount: 0, images: [] };
+
+    const viewport = page.getViewport({ scale: 1 });
+    const pageWidth = viewport.width;
+    const pageHeight = viewport.height;
+
+    for (let i = 0; i < imageList.length; i++) {
+      const imgObj = imageList[i];
+      try {
+        const { width: imgW, height: imgH } = await imgObj.getImageData();
+        // 估算图片位置（best-effort，基于页面均分）
+        const estX = (i % 2) * pageWidth * 0.5 + pageWidth * 0.1;
+        const estY = Math.floor(i / 2) * pageHeight * 0.3 + pageHeight * 0.1;
+        const estW = Math.min(imgW, pageWidth * 0.4);
+        const estH = Math.min(imgH, pageHeight * 0.25);
+
+        result.push({
+          name: imgObj.name || `image_${i}`,
+          width: imgW,
+          height: imgH,
+          x: Math.round(estX),
+          y: Math.round(estY),
+          w: Math.round(estW),
+          h: Math.round(estH),
+        });
+      } catch {}
+    }
+  } catch {}
+  return { imageCount: result.length, images: result };
+}
 // PDF 坐标系原点在左下角，transform[5] 越大越靠上。
 function rebuildLayout(items) {
   // 1. 过滤空块，收集 (y, x, 文本, 高度)

@@ -92,12 +92,23 @@ async function detectImagesFromPage(page) {
     const viewport = page.getViewport({ scale: 1 });
     const pageWidth = viewport.width;
     const pageHeight = viewport.height;
+    const pageArea = pageWidth * pageHeight;
 
     for (let i = 0; i < imageList.length; i++) {
       const imgObj = imageList[i];
       try {
         const { width: imgW, height: imgH } = await imgObj.getImageData();
-        // 估算图片位置（best-effort，基于页面均分）
+        const imgArea = imgW * imgH;
+
+        // 过滤掉接近整页大小的图片（扫描件本身就是全页图）
+        // 只保留文档中的插图、流程图等内容图片
+        const areaRatio = imgArea / pageArea;
+        if (areaRatio > 0.7) continue; // 超过页面面积 70% 视为扫描件本身
+
+        // 过滤太小的图片（可能是图标、logo）
+        if (imgW < 30 && imgH < 30) continue;
+
+        // 估算图片位置（best-effort）
         const estX = (i % 2) * pageWidth * 0.5 + pageWidth * 0.1;
         const estY = Math.floor(i / 2) * pageHeight * 0.3 + pageHeight * 0.1;
         const estW = Math.min(imgW, pageWidth * 0.4);

@@ -1,19 +1,12 @@
 [node]
 version = "20"
 
-[setup]
-runtime = "node"
-install = """
-cd frontend && npm ci
-cd ../backend && npm ci
-"""
-
 [build]
 command = """
-cd frontend && npm run build
+npm run build
 """
 
 [start]
 command = """
-cd backend && NODE_ENV=production node src/index.js
+npm start
 """

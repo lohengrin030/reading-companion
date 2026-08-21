@@ -1213,7 +1213,7 @@ export default function App() {
       )}
 
       <main className="content">
-        <div className="text-area" ref={textRef} onMouseUp={handleMouseUp}>
+        <div className="text-area" ref={textRef} onMouseUp={handleMouseUp} onTouchEnd={handleMouseUp}>
           {pages.length === 0 ? (
             <div className="placeholder">
               点击右上角「导入 PDF」开始阅读。选中文字或点击公式即可提问。
@@ -1727,13 +1727,17 @@ function SelectionPopup({
     } catch {}
   };
 
-  // 点击弹窗外部任意处关闭
+  // 点击弹窗外部任意处关闭（桌面 mousedown + 移动端 touchstart）
   useEffect(() => {
     const onDown = (e) => {
       if (rootRef.current && !rootRef.current.contains(e.target)) onClose();
     };
     document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+    };
   }, [onClose]);
 
   // 文字选中即自动翻译（中文文献跳过）
